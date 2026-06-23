@@ -449,9 +449,6 @@ app.get("/api/admin/stats", async (req, res) => {
 // ---------------- VITE / DEPLOYMENT GATEWAY ----------------
 
 const startServer = async () => {
-  // Seed the empty DB on reload
-  await seedDatabaseIfEmpty();
-
   if (process.env.NODE_ENV !== "production") {
     // Vite middleware for rendering and local dev routing integration
     const vite = await createViteServer({
@@ -470,6 +467,10 @@ const startServer = async () => {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
+    // Seed the empty DB on reload asynchronously so it doesn't block booting
+    seedDatabaseIfEmpty().catch((err) => {
+      console.error("Async seeding task failed:", err);
+    });
   });
 };
 
