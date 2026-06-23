@@ -253,7 +253,7 @@ export default function App() {
 
   // ---------------- ADMIN MENU MANAGEMENT OPERATIONS ----------------
 
-  const handleAddMenuItem = async (item: Omit<MenuItem, "id">): Promise<boolean> => {
+  const handleAddMenuItem = async (item: Omit<MenuItem, "id">): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch("/api/admin/menu", {
         method: "POST",
@@ -262,15 +262,17 @@ export default function App() {
       });
       if (res.ok) {
         fetchMenuItems(); // Refresh local list
-        return true;
+        return { success: true };
       }
-    } catch (err) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.error || `HTTP Error ${res.status}` };
+    } catch (err: any) {
       console.error(err);
+      return { success: false, error: err.message || "Failed to parse connection error." };
     }
-    return false;
   };
 
-  const handleEditMenuItem = async (id: string, item: Omit<MenuItem, "id">): Promise<boolean> => {
+  const handleEditMenuItem = async (id: string, item: Omit<MenuItem, "id">): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`/api/admin/menu/${id}`, {
         method: "PUT",
@@ -279,12 +281,14 @@ export default function App() {
       });
       if (res.ok) {
         fetchMenuItems();
-        return true;
+        return { success: true };
       }
-    } catch (err) {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, error: data.error || `HTTP Error ${res.status}` };
+    } catch (err: any) {
       console.error(err);
+      return { success: false, error: err.message || "Failed to parse connection error." };
     }
-    return false;
   };
 
   const handleDeleteMenuItem = async (id: string): Promise<boolean> => {

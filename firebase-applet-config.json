@@ -1,9 +1,10 @@
 {
+  "projectId": "savory-9163f",
+  "appId": "1:794095121954:web:20f6860754d5f6ce607c7b",
   "apiKey": "AIzaSyAquJRYiq01r8G8As_W9zSj91fsrVXzPZ0",
   "authDomain": "savory-9163f.firebaseapp.com",
-  "projectId": "savory-9163f",
+  "firestoreDatabaseId": "(default)",
   "storageBucket": "savory-9163f.firebasestorage.app",
   "messagingSenderId": "794095121954",
-  "appId": "1:794095121954:web:20f6860754d5f6ce607c7b"
+  "measurementId": "G-2GK74ELV2L"
 }
-

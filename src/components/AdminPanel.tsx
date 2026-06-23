@@ -33,10 +33,57 @@ interface AdminPanelProps {
   isLoadingOrders: boolean;
   onRefreshOrders: () => void;
   onMarkAsPaid: (id: string) => Promise<boolean>;
-  onAddMenuItem: (item: Omit<MenuItem, "id">) => Promise<boolean>;
-  onEditMenuItem: (id: string, item: Omit<MenuItem, "id">) => Promise<boolean>;
+  onAddMenuItem: (item: Omit<MenuItem, "id">) => Promise<{ success: boolean; error?: string }>;
+  onEditMenuItem: (id: string, item: Omit<MenuItem, "id">) => Promise<{ success: boolean; error?: string }>;
   onDeleteMenuItem: (id: string) => Promise<boolean>;
 }
+
+const getTroubleshootingInstructions = (error: string) => {
+  const err = error.toLowerCase();
+  if (err.includes("permission") || err.includes("insufficient") || err.includes("denied")) {
+    return {
+      title: "Firebase Security Rules Modification Needed",
+      steps: [
+        "Go to your Firebase Console for the project 'savory-9163f'.",
+        "Select 'Firestore Database' under 'Build' on the left menu.",
+        "Click the 'Rules' tab at the top of the interface.",
+        "Click 'Edit' and update the allow statement to: allow read, write: if true; (you can harden this later) or publish the rules we deployed.",
+        "Click the blue 'Publish' button to save."
+      ]
+    };
+  }
+  if (err.includes("not found") || err.includes("not-found") || err.includes("database") || err.includes("dataset") || err.includes("project")) {
+    return {
+      title: "Firestore Database Is Not Processed / Initialized",
+      steps: [
+        "Your new Firebase Project 'savory-9163f' doesn't have a Cloud Firestore database started yet.",
+        "Go to your Firebase Console at: https://console.firebase.google.com/project/savory-9163f/firestore",
+        "Click the large 'Create database' button.",
+        "Select '(default)' as the database ID, pick any hosting location, and start in 'Test mode'.",
+        "Once created, reload this browser window and register the food dish again! It will seed the database successfully."
+      ]
+    };
+  }
+  if (err.includes("auth") || err.includes("login") || err.includes("operation-not-allowed")) {
+    return {
+      title: "Email/Password Registration Disabled",
+      steps: [
+        "Open the Firebase Console for your project 'savory-9163f'.",
+        "Select 'Authentication' under 'Build' on the left menu.",
+        "Go to the 'Sign-in method' tab at the top of the page.",
+        "Click 'Add new provider', select 'Email/Password', of enable both settings ('Email/Password' and optionally 'Email link'), then click Save."
+      ]
+    };
+  }
+  return {
+    title: "Database Initialization Connection Check",
+    steps: [
+      "Ensure you have a stable network connection.",
+      "Check that your Cloud Firestore database of project 'savory-9163f' is fully created in your Firebase Console.",
+      "Ensure that its security rules are set up to permit public reads and writes for testing during this sandbox phase."
+    ]
+  };
+};
 
 export default function AdminPanel({
   user,
@@ -127,7 +174,7 @@ export default function AdminPanel({
       return;
     }
     setActionInProgress("addItem");
-    const success = await onAddMenuItem({
+    const result = await onAddMenuItem({
       name: newFormName,
       price: Number(newFormPrice),
       description: newFormDescription,
@@ -135,7 +182,7 @@ export default function AdminPanel({
       category: newFormCategory,
       isAvailable: newFormAvailable,
     });
-    if (success) {
+    if (result.success) {
       // clear
       setNewFormName("");
       setNewFormPrice("");
@@ -146,7 +193,7 @@ export default function AdminPanel({
       setIsAddingItem(false);
       setPanelError("");
     } else {
-      setPanelError("Failed to register food recipe in the database. Please check connection.");
+      setPanelError(result.error || "Failed to register food recipe in the database. Please check connection.");
     }
     setActionInProgress(null);
   };
@@ -155,7 +202,7 @@ export default function AdminPanel({
   const handleEditSubmit = async (e: React.FormEvent, id: string) => {
     e.preventDefault();
     setActionInProgress(`edit_${id}`);
-    const success = await onEditMenuItem(id, {
+    const result = await onEditMenuItem(id, {
       name: editFormName,
       price: Number(editFormPrice),
       description: editFormDescription,
@@ -163,8 +210,11 @@ export default function AdminPanel({
       category: editFormCategory,
       isAvailable: editFormAvailable,
     });
-    if (success) {
+    if (result.success) {
       setEditingItemId(null);
+      setPanelError("");
+    } else {
+      setPanelError(result.error || "Failed to update recipe in the database.");
     }
     setActionInProgress(null);
   };
@@ -424,12 +474,37 @@ export default function AdminPanel({
             >
               <h4 className="font-sans font-bold text-slate-850 text-sm">Design Curated Healthy Dish Card</h4>
               
-              {panelError && (
-                <div className="rounded-xl bg-rose-50 border border-rose-100 p-3.5 flex items-center space-x-2 text-rose-700 font-sans text-xs">
-                  <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
-                  <span>{panelError}</span>
-                </div>
-              )}
+              {panelError && (() => {
+                const instructions = getTroubleshootingInstructions(panelError);
+                return (
+                  <div className="space-y-3" id="admin-troubleshoot-container">
+                    <div className="rounded-xl bg-rose-50 border border-rose-100 p-3.5 flex items-start space-x-2 text-rose-700 font-sans text-xs">
+                      <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Error message from Firebase:</p>
+                        <p className="font-mono mt-1 text-[11px] bg-white/60 p-2 rounded border border-rose-100">{panelError}</p>
+                      </div>
+                    </div>
+
+                    {instructions && (
+                      <div className="rounded-xl bg-emerald-50 border border-emerald-150 p-4 text-emerald-950 font-sans text-xs space-y-2">
+                        <p className="font-extrabold flex items-center gap-1.5 text-[13px]">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                          🛠️ Quick Setup: {instructions.title}
+                        </p>
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                          Since the application is configured to target your custom Firebase project <strong className="text-emerald-800">savory-9163f</strong>, you must configure the Firestore database for this project so the server can record items successfully.
+                        </p>
+                        <ol className="list-decimal list-inside space-y-1.5 text-slate-700 mt-2 font-medium">
+                          {instructions.steps.map((step, idx) => (
+                            <li key={idx} className="leading-relaxed pl-1">{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               
               <form onSubmit={handleAddSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
