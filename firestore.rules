@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global reusable validation primitives 
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // User Profile integrity
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'phone', 'name', 'isAdmin']) &&
+             data.keys().size() == 5 &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 128 &&
+             data.phone is string && data.phone.size() <= 32 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.isAdmin is bool;
+    }
+
+    // Menu Item Integrity
+    function isValidMenuItem(data) {
+      return data.keys().hasAll(['name', 'price', 'description', 'imageUrl', 'category', 'isAvailable']) &&
+             data.keys().size() == 6 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.price is number && data.price >= 0 && data.price <= 100000 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1000 &&
+             data.category is string && data.category.size() <= 128 &&
+             data.isAvailable is bool;
+    }
+
+    // Order Integrity
+    function isValidOrder(data) {
+      return data.keys().hasAll(['userId', 'userName', 'userEmail', 'userPhone', 'items', 'totalPrice', 'referenceNumber', 'paymentStatus', 'createdAt']) &&
+             data.keys().size() == 9 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 128 &&
+             data.userPhone is string && data.userPhone.size() <= 32 &&
+             data.items is list && data.items.size() <= 100 &&
+             data.totalPrice is number && data.totalPrice >= 0 && data.totalPrice <= 1000000 &&
+             data.referenceNumber is string && data.referenceNumber.size() == 4 &&
+             data.paymentStatus is string && (data.paymentStatus == 'pending' || data.paymentStatus == 'paid') &&
+             data.createdAt is string;
+    }
+
+    // Email dispatch metadata tracking integrity
+    function isValidEmailLog(data) {
+      return data.keys().hasAll(['to', 'userName', 'orderId', 'subject', 'body', 'sentAt', 'etherealUrl']) &&
+             data.keys().size() == 7 &&
+             data.to is string && data.to.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 128 &&
+             data.orderId is string && data.orderId.size() <= 128 &&
+             data.subject is string && data.subject.size() <= 256 &&
+             data.body is string && data.body.size() <= 100000 &&
+             data.sentAt is string &&
+             (data.etherealUrl == null || data.etherealUrl is string);
+    }
+
+    // 1. Safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Profile collection matches
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (
+        incoming().isAdmin == false || 
+        incoming().email == "junaeid2.0shohan@gmail.com" || 
+        incoming().email == "admin@savorygreen.com"
+      );
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (
+        incoming().isAdmin == existing().isAdmin ||
+        incoming().email == "junaeid2.0shohan@gmail.com" || 
+        incoming().email == "admin@savorygreen.com"
+      );
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 3. Menu Items collection matches
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow create, update: if isValidMenuItem(incoming()) && isValidId(itemId);
+      allow delete: if isValidId(itemId);
+    }
+
+    // 4. Orders collection matches
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create, update: if isValidOrder(incoming()) && isValidId(orderId);
+      allow delete: if isValidId(orderId);
+    }
+
+    // 5. Email Logs collection matches
+    match /email_logs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidEmailLog(incoming()) && isValidId(logId);
+      allow delete: if isValidId(logId);
+    }
+  }
+}

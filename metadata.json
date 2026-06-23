@@ -1,0 +1,6 @@
+{
+  "name": "Savory Green Restaurant",
+  "description": "A high-fidelity full-stack restaurant app featuring a light green and white design, food menu, interactive cart, manual bKash payment portal, user dashboard, automated confirmation emails, and an administration portal with live statistics, order management, and menu management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

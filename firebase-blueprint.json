@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "user": {
+      "title": "UserProfile",
+      "description": "User account registration and custom privilege metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Authentication" },
+        "email": { "type": "string", "format": "email", "description": "Primary email contact address" },
+        "phone": { "type": "string", "description": "Mobile telephone digits" },
+        "name": { "type": "string", "description": "Customer standard display name" },
+        "isAdmin": { "type": "boolean", "description": "Indicates administration console panel access clearance" }
+      },
+      "required": ["uid", "email", "phone", "name", "isAdmin"]
+    },
+    "menu_item": {
+      "title": "MenuItem",
+      "description": "Culinary meal selections available for shopping cart assembly",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Dish title" },
+        "price": { "type": "number", "description": "Pricing value in Bangladesh Taka (BDT)" },
+        "description": { "type": "string", "description": "Ingredient summary details" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "Visual presentation asset address" },
+        "category": { "type": "string", "description": "Filing tag for display sorting categories" },
+        "isAvailable": { "type": "boolean", "description": "Kitchen supply level clearance toggles" }
+      },
+      "required": ["name", "price", "description", "imageUrl", "category", "isAvailable"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Individual dining orders logged for preparation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Buying diner owner uid reference" },
+        "userName": { "type": "string", "description": "Display contact name" },
+        "userEmail": { "type": "string", "format": "email", "description": "Dolphin delivery invoice email address" },
+        "userPhone": { "type": "string", "description": "Customer contact telephone digits" },
+        "items": { "type": "array", "description": "Items ordered containing item reference, quantities, and prices" },
+        "totalPrice": { "type": "number", "description": "Settlement value sum of items minus vouchers" },
+        "referenceNumber": { "type": "string", "description": "Manual 4-digit bank payment matching code" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid"], "description": "Auditing tracking status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Logging timestamp record" }
+      },
+      "required": ["userId", "userName", "userEmail", "totalPrice", "referenceNumber", "paymentStatus", "createdAt"]
+    },
+    "email_log": {
+      "title": "EmailLog",
+      "description": "Live mail dispatch and status audit chronicles",
+      "type": "object",
+      "properties": {
+        "to": { "type": "string", "format": "email", "description": "Receiver address" },
+        "userName": { "type": "string", "description": "Diner greeting name" },
+        "orderId": { "type": "string", "description": "Tied transactional order uid" },
+        "subject": { "type": "string", "description": "Email subject line" },
+        "body": { "type": "string", "description": "HTML rich body element" },
+        "sentAt": { "type": "string", "format": "date-time", "description": "Timestamp tracking log" },
+        "etherealUrl": { "type": "string", "format": "uri", "description": "Simulated sandbox browser address link" }
+      },
+      "required": ["to", "userName", "orderId", "subject", "body", "sentAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "User profiles"
+    },
+    "menu_items/{itemId}": {
+      "schema": "menu_item",
+      "description": "Dishes available on restaurant menu"
+    },
+    "orders/{orderId}": {
+      "schema": "order",
+      "description": "Restaurant orders"
+    },
+    "email_logs/{logId}": {
+      "schema": "email_log",
+      "description": "Chronicle record logs for outbound emails"
+    }
+  }
+}
